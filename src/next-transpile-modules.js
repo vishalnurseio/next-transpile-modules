@@ -160,7 +160,8 @@ const withTmInitializer = (modules = [], options = {}) => {
     const matcher = options.__unstable_matcher || createWebpackMatcher(modulesPaths, logger);
 
     return Object.assign({}, nextConfig, {
-      webpack(config, options) {
+      webpack(configT, options) {
+        let config = {...configT, watchOptions: {ignored: []}}
         // Safecheck for Next < 5.0
         if (!options.defaultLoaders) {
           throw new Error(
