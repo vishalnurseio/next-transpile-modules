@@ -1,0 +1,62 @@
+name: tests
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-18.04, macos-latest]
+        node: [12, 14]
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Puppeteer dependencies
+        run: bash .github/workflows/setup_puppeteer.sh
+        if: startsWith(matrix.os,'ubuntu')
+
+      - name: Tests setup
+        run: node src/__tests__/setup.js
+
+      - name: Install tests apps dependencies (npm-basic)
+        run: npm ci --prefix=src/__tests__/__apps__/npm-basic
+
+      - name: Install tests apps dependencies (webpack 5)
+        run: yarn --frozen-lockfile --cwd src/__tests__/__apps__/webpack-5
+
+      - name: Install tests apps dependencies (yarn workspaces)
+        run: yarn --frozen-lockfile --cwd src/__tests__/__apps__/yarn-workspaces
+
+      - name: Install tests apps dependencies (yarn workspaces)
+        run: npx pnpm i --frozen-lockfile --prefix src/__tests__/__apps__/pnpm
+
+      - name: Build test apps
+        run: npm run test:prepare
+
+      - name: 'Test: unit & integration tests'
+        run: npm test
+
+      - name: 'Test: linting'
+        run: npm run test:lint
+
+      - name: 'Test: formatting'
+        run: npm run test:formatting
+        env:
+          CI: true
